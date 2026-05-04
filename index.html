@@ -445,11 +445,20 @@
 
 <script>
 /* ── Data ── */
-const DATA = {
-  objeto: ['silla','mesa','lámpara','teléfono','libro','zapato','reloj','espejo','llave','cuchillo'],
-  animal: ['perro','gato','caballo','elefante','delfín','águila','serpiente','conejo','tigre','oso'],
-  lugar:  ['playa','montaña','bosque','ciudad','desierto','río','castillo','mercado','aeropuerto','hospital']
-};
+let DATA = {};
+
+async function loadData() {
+  const res  = await fetch('data.csv');
+  const text = await res.text();
+  const [header, ...rows] = text.trim().split('\n');
+  const cols = header.split(',');
+  cols.forEach(c => { DATA[c.trim()] = []; });
+  rows.forEach(row => {
+    row.split(',').forEach((val, i) => {
+      DATA[cols[i].trim()].push(val.trim());
+    });
+  });
+}
 
 /* ── State ── */
 const G = {
@@ -646,7 +655,7 @@ function goScreen(id) {
 }
 
 /* ── Init ── */
-initSeed();
+loadData().then(() => initSeed());
 </script>
 </body>
 </html>
