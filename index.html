@@ -24,7 +24,7 @@
       --danger-dim:  rgba(255, 59, 59, 0.14);
     }
 
-    html { height: 100%; }
+    html { height: 100%; overflow: hidden; }
 
     body {
       font-family: 'Syne', system-ui, sans-serif;
@@ -35,6 +35,7 @@
       align-items: center;
       justify-content: center;
       padding: 28px 20px 40px;
+      overflow: hidden;
     }
 
     /* ── Grain overlay ── */
@@ -67,12 +68,14 @@
 
     /* ─────────────── HOME ─────────────── */
     .game-title {
-      font-size: clamp(4.2rem, 20vw, 6.8rem);
+      font-size: clamp(2.6rem, 18vw, 6.8rem);
       font-weight: 800;
       letter-spacing: -0.035em;
       line-height: 0.88;
       color: var(--text);
       text-align: center;
+      max-width: 100%;
+      overflow: hidden;
     }
     .game-title em { font-style: normal; color: var(--accent); }
 
