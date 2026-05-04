@@ -570,11 +570,16 @@ function shuffle(a) {
 function rnd(n) { return Math.floor(Math.random() * n); }
 
 function fitText(el, maxPx = 52, minPx = 14) {
-  el.style.fontSize   = maxPx + 'px';
-  el.style.display    = 'inline-block';
-  const maxW = el.parentElement.clientWidth;
+  const container = el.closest('.reveal-inner');
+  const cs        = getComputedStyle(container);
+  const availW    = container.clientWidth
+                  - parseFloat(cs.paddingLeft)
+                  - parseFloat(cs.paddingRight);
+
+  el.style.display  = 'inline-block';
+  el.style.fontSize = maxPx + 'px';
   let size = maxPx;
-  while (el.offsetWidth > maxW && size > minPx) {
+  while (el.offsetWidth > availW && size > minPx) {
     size -= 1;
     el.style.fontSize = size + 'px';
   }
