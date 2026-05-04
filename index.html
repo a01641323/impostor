@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Impostor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0c0c0e;
+      --surface:     #141417;
+      --surface2:    #1c1c21;
+      --border:      #252529;
+      --text:        #eeeae3;
+      --muted:       #5e5c63;
+      --accent:      #4d8eff;
+      --accent-dim:  rgba(77, 142, 255, 0.13);
+      --accent-hi:   #6fa3ff;
+      --danger:      #ff3b3b;
+      --danger-dim:  rgba(255, 59, 59, 0.14);
+    }
+
+    html { height: 100%; }
+
+    body {
+      font-family: 'Syne', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 20px 40px;
+    }
+
+    /* ── Grain overlay ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.035;
+      z-index: 9999;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 390px;
+    }
+
+    /* ─────────────── SCREENS ─────────────── */
+    .screen { display: none; flex-direction: column; gap: 26px; }
+    .screen.active {
+      display: flex;
+      animation: screenIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─────────────── HOME ─────────────── */
+    .game-title {
+      font-size: clamp(4.2rem, 20vw, 6.8rem);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 0.88;
+      color: var(--text);
+      text-align: center;
+    }
+    .game-title em { font-style: normal; color: var(--accent); }
+
+    /* Field label */
+    .lbl {
+      display: block;
+      font-size: 0.625rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 9px;
+    }
+    .field { display: flex; flex-direction: column; }
+
+    /* Stepper */
+    .stepper {
+      display: flex;
+      align-items: stretch;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      overflow: hidden;
+      height: 54px;
+    }
+    .stepper-btn {
+      width: 54px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+    .stepper-btn:hover { color: var(--accent); background: var(--accent-dim); }
+    .stepper-btn:active { background: rgba(77,142,255,0.22); }
+    .stepper-val {
+      flex: 1;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 54px;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      transition: transform 0.12s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .stepper-val.bump { transform: scale(1.18); }
+
+    /* Category select */
+    .cat-select {
+      width: 100%;
+      height: 54px;
+      padding: 0 44px 0 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235e5c63' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      transition: border-color 0.18s;
+    }
+    .cat-select:focus { outline: none; border-color: var(--accent); }
+    .cat-select.has-value { border-color: var(--accent); color: var(--accent); }
+    .cat-select option { background: #1c1c21; color: var(--text); font-weight: 600; }
+
+    /* Seed */
+    .seed-row { display: flex; flex-direction: column; gap: 8px; }
+    .seed-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+    }
+    .seed-led {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .seed-led.on {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(255, 92, 53, 0.5);
+    }
+    .seed-txt {
+      font-size: 0.78rem;
+      color: var(--muted);
+      flex: 1;
+      line-height: 1.3;
+    }
+    .seed-code {
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+    }
+
+    /* ─────────────── BUTTONS ─────────────── */
+    .btn {
+      width: 100%;
+      padding: 15px 24px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn:active { transform: scale(0.975); }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #0c0c0e;
+    }
+    .btn-accent:hover:not(:disabled) { background: var(--accent-hi); }
+    .btn-accent:disabled { opacity: 0.22; cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: #38383f; }
+
+    /* ─────────────── PLAYER SCREEN ─────────────── */
+    .p-header { text-align: center; }
+    .p-eyebrow {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .p-num {
+      font-size: clamp(5rem, 22vw, 7rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+    .p-prog {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 5px;
+      letter-spacing: 0.05em;
+    }
+
+    /* Reveal card */
+    .reveal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      min-height: 168px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .reveal-dots { display: flex; gap: 7px; }
+    .reveal-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+    .reveal-inner {
+      text-align: center;
+      padding: 36px 28px;
+      animation: pop 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes pop {
+      from { opacity: 0; transform: scale(0.82) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .reveal-role-lbl {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .reveal-role-lbl.is-word { color: var(--accent); }
+    .reveal-role-lbl.is-imp  { color: var(--danger); }
+    .reveal-big {
+      font-size: clamp(2.2rem, 10vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .reveal-big.is-imp { color: var(--danger); }
+
+    /* Impostor flash */
+    #flash {
+      position: fixed;
+      inset: 0;
+      background: var(--danger);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 1000;
+    }
+    #flash.go { animation: flashBurst 0.55s ease-out forwards; }
+    @keyframes flashBurst {
+      0%   { opacity: 0.28; }
+      40%  { opacity: 0.12; }
+      100% { opacity: 0; }
+    }
+
+    /* ─────────────── FINAL SCREEN ─────────────── */
+    .final-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 44px 28px;
+      text-align: center;
+    }
+    .final-eyebrow {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .final-num {
+      font-size: clamp(5.5rem, 24vw, 8rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 0.95;
+      color: var(--accent);
+    }
+    .final-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 10px;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-stack { display: flex; flex-direction: column; gap: 9px; }
+
+    /* ─────────────── PROGRESS BAR ─────────────── */
+    .progress-bar {
+      height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+<div id="flash"></div>
+
+<div class="wrap">
+
+  <!-- ══════════════ HOME ══════════════ -->
+  <div id="home" class="screen active">
+
+    <div>
+      <h1 class="game-title">im<em>pos</em>tor</h1>
+    </div>
+
+    <div class="field">
+      <span class="lbl">Jugadores</span>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adj('players',-1)">−</button>
+        <div class="stepper-val" id="v-players">4</div>
+        <button class="stepper-btn" onclick="adj('players',1)">+</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="lbl">Impostores</span>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adj('impostors',-1)">−</button>
+        <div class="stepper-val" id="v-impostors">1</div>
+        <button class="stepper-btn" onclick="adj('impostors',1)">+</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="lbl">Categoría</span>
+      <select class="cat-select" id="cat-select" onchange="setCat(this.value)">
+        <option value="" disabled selected>Elegir categoría…</option>
+        <option value="objeto">Objeto</option>
+        <option value="animal">Animal</option>
+        <option value="lugar">Lugar</option>
+      </select>
+    </div>
+
+    <div class="seed-row">
+      <button class="btn btn-ghost" onclick="genSeed()">Generar Semilla</button>
+      <div class="seed-info">
+        <div class="seed-led" id="seed-led"></div>
+        <div class="seed-txt" id="seed-txt">Sin semilla activa</div>
+      </div>
+    </div>
+
+    <button class="btn btn-accent" id="btn-play" onclick="startPlay()" disabled>Jugar</button>
+
+  </div>
+
+  <!-- ══════════════ PLAYER ══════════════ -->
+  <div id="player" class="screen">
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="p-bar" style="width:0%"></div>
+    </div>
+
+    <div class="p-header">
+      <div class="p-eyebrow">Jugador</div>
+      <div class="p-num" id="p-num">1</div>
+      <div class="p-prog" id="p-prog">1 de 4</div>
+    </div>
+
+    <div class="reveal-card" id="reveal-card">
+      <div class="reveal-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <button class="btn btn-accent" id="btn-action" onclick="doAction()">Mostrar</button>
+
+  </div>
+
+  <!-- ══════════════ FINAL ══════════════ -->
+  <div id="final" class="screen">
+
+    <div class="final-card">
+      <div class="final-eyebrow">Empieza la discusión</div>
+      <div class="final-num" id="f-num">—</div>
+      <div class="final-sub">Jugador</div>
+    </div>
+
+    <div class="btn-stack">
+      <button class="btn btn-accent" onclick="restartRound()">Reiniciar Ronda</button>
+      <button class="btn btn-ghost"  onclick="goHome()">Menú Principal</button>
+    </div>
+
+  </div>
+
+</div><!-- .wrap -->
+
+<script>
+/* ── Data ── */
+const DATA = {
+  objeto: ['silla','mesa','lámpara','teléfono','libro','zapato','reloj','espejo','llave','cuchillo'],
+  animal: ['perro','gato','caballo','elefante','delfín','águila','serpiente','conejo','tigre','oso'],
+  lugar:  ['playa','montaña','bosque','ciudad','desierto','río','castillo','mercado','aeropuerto','hospital']
+};
+
+/* ── State ── */
+const G = {
+  players:  4,
+  impostors: 1,
+  category: null,
+  roles:    [],
+  cur:      0,
+  shown:    false
+};
+
+/* ════════════════════════════
+   SEED
+════════════════════════════ */
+function initSeed() {
+  renderSeed(localStorage.getItem('impostorSeed'));
+}
+
+function genSeed() {
+  const raw = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const seed = raw.toUpperCase().slice(0, 8);
+  localStorage.setItem('impostorSeed', seed);
+  renderSeed(seed);
+}
+
+function renderSeed(s) {
+  const led = document.getElementById('seed-led');
+  const txt = document.getElementById('seed-txt');
+  if (s) {
+    led.classList.add('on');
+    txt.innerHTML = `Semilla activa: <span class="seed-code">${s}</span>`;
+  } else {
+    led.classList.remove('on');
+    txt.textContent = 'Sin semilla activa';
+  }
+}
+
+function getSeed() { return localStorage.getItem('impostorSeed'); }
+
+/* ════════════════════════════
+   CONTROLS
+════════════════════════════ */
+function adj(field, d) {
+  if (field === 'players') {
+    G.players = clamp(G.players + d, 3, 12);
+    const maxI = Math.floor(G.players / 2);
+    if (G.impostors > maxI) G.impostors = maxI;
+    bump('v-players', G.players);
+    bump('v-impostors', G.impostors);
+  } else {
+    G.impostors = clamp(G.impostors + d, 1, Math.floor(G.players / 2));
+    bump('v-impostors', G.impostors);
+  }
+}
+
+function bump(id, val) {
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  el.classList.add('bump');
+  setTimeout(() => el.classList.remove('bump'), 150);
+}
+
+function setCat(c) {
+  G.category = c;
+  const sel = document.getElementById('cat-select');
+  sel.classList.toggle('has-value', !!c);
+  document.getElementById('btn-play').disabled = !c;
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+/* ════════════════════════════
+   WORD SELECTION
+════════════════════════════ */
+function pickWord() {
+  const seed  = getSeed();
+  const words = DATA[G.category];
+
+  if (!seed) return words[rnd(words.length)];
+
+  const key  = `iUsed_${seed}_${G.category}`;
+  let used   = JSON.parse(localStorage.getItem(key) || '[]');
+
+  if (used.length >= words.length) {
+    used = [];
+  }
+
+  const avail = Array.from({ length: words.length }, (_, i) => i)
+                     .filter(i => !used.includes(i));
+  const idx   = avail[rnd(avail.length)];
+  used.push(idx);
+  localStorage.setItem(key, JSON.stringify(used));
+  return words[idx];
+}
+
+/* ════════════════════════════
+   ROLES
+════════════════════════════ */
+function makeRoles(word) {
+  const roles = Array(G.players).fill(word);
+  const pool  = shuffle(Array.from({ length: G.players }, (_, i) => i));
+  pool.slice(0, G.impostors).forEach(i => { roles[i] = '__imp__'; });
+  return roles;
+}
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rnd(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function rnd(n) { return Math.floor(Math.random() * n); }
+
+/* ════════════════════════════
+   GAME FLOW
+════════════════════════════ */
+function startPlay() {
+  if (!G.category) return;
+  const word = pickWord();
+  G.roles = makeRoles(word);
+  G.cur   = 0;
+  G.shown = false;
+  goScreen('player');
+  renderPlayer();
+}
+
+function renderPlayer() {
+  const n = G.cur + 1;
+  document.getElementById('p-num').textContent  = n;
+  document.getElementById('p-prog').textContent = `${n} de ${G.players}`;
+  document.getElementById('p-bar').style.width  = `${(G.cur / G.players) * 100}%`;
+  document.getElementById('reveal-card').innerHTML =
+    '<div class="reveal-dots"><span></span><span></span><span></span></div>';
+  const btn = document.getElementById('btn-action');
+  btn.textContent = 'Mostrar';
+  G.shown = false;
+}
+
+function doAction() {
+  if (!G.shown) {
+    const role  = G.roles[G.cur];
+    const isImp = role === '__imp__';
+
+    document.getElementById('reveal-card').innerHTML = `
+      <div class="reveal-inner">
+        <div class="reveal-role-lbl ${isImp ? 'is-imp' : 'is-word'}">
+          ${isImp ? 'Eres el' : 'La palabra es'}
+        </div>
+        <div class="reveal-big ${isImp ? 'is-imp' : ''}">
+          ${isImp ? 'Impostor' : role}
+        </div>
+      </div>`;
+
+    if (isImp) flash();
+    document.getElementById('btn-action').textContent = 'Siguiente';
+    G.shown = true;
+
+  } else {
+    G.cur++;
+    if (G.cur >= G.players) {
+      document.getElementById('f-num').textContent = rnd(G.players) + 1;
+      goScreen('final');
+    } else {
+      renderPlayer();
+    }
+  }
+}
+
+function flash() {
+  const el = document.getElementById('flash');
+  el.classList.remove('go');
+  void el.offsetWidth;
+  el.classList.add('go');
+}
+
+function restartRound() {
+  const word = pickWord();
+  G.roles = makeRoles(word);
+  G.cur   = 0;
+  G.shown = false;
+  goScreen('player');
+  renderPlayer();
+}
+
+function goHome() { goScreen('home'); }
+
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ── Init ── */
+initSeed();
+</script>
+</body>
+</html>
