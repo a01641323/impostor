@@ -370,9 +370,6 @@
       <span class="lbl">Categoría</span>
       <select class="cat-select" id="cat-select" onchange="setCat(this.value)">
         <option value="" disabled selected>Elegir categoría…</option>
-        <option value="objeto">Objeto</option>
-        <option value="animal">Animal</option>
-        <option value="lugar">Lugar</option>
       </select>
     </div>
 
@@ -443,6 +440,16 @@ async function loadData() {
     row.split(',').forEach((val, i) => {
       DATA[cols[i].trim()].push(val.trim());
     });
+  });
+
+  const sel = document.getElementById('cat-select');
+  cols.forEach(c => {
+    const key   = c.trim();
+    const label = key.charAt(0).toUpperCase() + key.slice(1);
+    const opt   = document.createElement('option');
+    opt.value       = key;
+    opt.textContent = label;
+    sel.appendChild(opt);
   });
 }
 
@@ -562,6 +569,18 @@ function shuffle(a) {
 
 function rnd(n) { return Math.floor(Math.random() * n); }
 
+function fitText(el, maxPx = 52, minPx = 14) {
+  el.style.fontSize   = maxPx + 'px';
+  el.style.display    = 'inline-block';
+  const maxW = el.parentElement.clientWidth;
+  let size = maxPx;
+  while (el.offsetWidth > maxW && size > minPx) {
+    size -= 1;
+    el.style.fontSize = size + 'px';
+  }
+  el.style.display = '';
+}
+
 /* ════════════════════════════
    GAME FLOW
 ════════════════════════════ */
@@ -601,6 +620,8 @@ function doAction() {
           ${isImp ? 'Impostor' : role}
         </div>
       </div>`;
+
+    if (!isImp) fitText(document.querySelector('#reveal-card .reveal-big'));
 
     document.getElementById('btn-action').textContent = 'Siguiente';
     G.shown = true;
